@@ -1,75 +1,62 @@
-import React, { useState } from "react"
-import { useRouter } from "next/navigation"
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { db } from "../lib/firebase";
+import { ref, get } from "firebase/database";
 
 export default function Home() {
-  const router = useRouter()
-  const [userType, setUserType] = useState("parent")
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("") // Estado para el mensaje de error
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  // Lógica de validación de credenciales
-  const validateCredentials = (username: string, password: string) => {
-    if (username === "admin" && password === "123456") {
-      return true
+  const handleSubmit = async () => {
+    const snap = await get(ref(db, `users/${username}`));
+    if (!snap.exists() || snap.val().password !== password) {
+      setError("Usuario o contraseña incorrectos");
+      return;
     }
-    return false
-  }
-
-  const handleSubmit = () => {
-    if (validateCredentials(username, password)) {
-      if (userType === "parent") {
-        router.push("/parent") // Redirige a la página de Padre
-      } else {
-        router.push("/child")  // Redirige a la página de Hijo
-      }
-    } else {
-      setError("Usuario o contraseña incorrectos")
-    }
-  }
+    const { role } = snap.val() as { role: "parent" | "child"; password: string };
+    router.push(role === "parent" ? "/parent" : "/child");
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 p-4">
       <div className="w-full max-w-md">
-        <h1 className="mb-8 text-center text-3xl font-bold text-white">Smart Home</h1>
-        
+        <h1 className="mb-8 text-center text-3xl font-bold text-white">
+          Smart Home
+        </h1>
+
         <input
-          type="text"
-          placeholder="Nombre de usuario"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mb-2 p-2 border border-gray-400 rounded"
+          placeholder="Usuario"
+          className="mb-2 p-2 border border-gray-400 rounded w-full"
         />
-        
         <input
           type="password"
-          placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-2 p-2 border border-gray-400 rounded"
+          placeholder="Contraseña"
+          className="mb-2 p-2 border border-gray-400 rounded w-full"
         />
-        
-        <div className="flex space-x-4">
-          <button
-            className={`p-2 rounded ${userType === "parent" ? "bg-blue-500" : "bg-gray-300"}`}
-            onClick={() => setUserType("parent")}
-          >
-            Padre
-          </button>
-          <button
-            className={`p-2 rounded ${userType === "child" ? "bg-blue-500" : "bg-gray-300"}`}
-            onClick={() => setUserType("child")}
-          >
-            Hijo
-          </button>
-        </div>
 
         {error && <p className="text-red-500">{error}</p>}
 
-        <button onClick={handleSubmit} className="mt-4 bg-purple-600 text-white p-2 rounded">
+        <button
+          onClick={handleSubmit}
+          className="mt-4 bg-purple-600 text-white p-2 rounded w-full"
+        >
           Ingresar
+        </button>
+
+        <button
+          onClick={() => router.push("/register")}
+          className="mt-2 text-blue-400 underline w-full"
+        >
+          Registrarse
         </button>
       </div>
     </div>
-  )
+  );
 }

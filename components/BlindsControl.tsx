@@ -8,30 +8,29 @@ import { db } from "../lib/firebase"
 import { useLogContext } from "../context/LogContext"
 
 export default function BlindsControl() {
-  const [position, setPosition] = useState(50)
+  // ----------- NUEVA LÓGICA: arriba (true) / abajo (false) -----------
+  const [isUp, setIsUp] = useState(false)
   const { addLog } = useLogContext()
-  const blindsRef = ref(db, "home/blinds/position")
+  const blindsRef = ref(db, "home/blinds/isUp")
 
-  /* --- Mantente sincronizado con Firebase --- */
+  /* --- Sincroniza con Firebase --- */
   useEffect(() => {
     const unsub = onValue(blindsRef, snap => {
-      if (snap.exists()) setPosition(snap.val())
+      if (snap.exists()) setIsUp(!!snap.val())
     })
     return () => unsub()
   }, [])
 
   const moveUp = () => {
-    if (position < 100) {
-      const newPos = Math.min(100, position + 25)
-      set(blindsRef, newPos)
+    if (!isUp) {
+      set(blindsRef, true)
       addLog("Persiana", "Subida")
     }
   }
 
   const moveDown = () => {
-    if (position > 0) {
-      const newPos = Math.max(0, position - 25)
-      set(blindsRef, newPos)
+    if (isUp) {
+      set(blindsRef, false)
       addLog("Persiana", "Bajada")
     }
   }
@@ -46,21 +45,21 @@ export default function BlindsControl() {
 
         <View style={styles.controls}>
           <TouchableOpacity
-            style={[styles.button, position >= 100 && styles.buttonDisabled]}
+            style={[styles.button, isUp && styles.buttonDisabled]}
             onPress={moveUp}
-            disabled={position >= 100}
+            disabled={isUp}
           >
             <Feather name="arrow-up" size={16} color="white" />
           </TouchableOpacity>
 
           <View style={styles.positionBadge}>
-            <Text style={styles.positionText}>{position}%</Text>
+            <Text style={styles.positionText}>{isUp ? "Arriba" : "Abajo"}</Text>
           </View>
 
           <TouchableOpacity
-            style={[styles.button, position <= 0 && styles.buttonDisabled]}
+            style={[styles.button, !isUp && styles.buttonDisabled]}
             onPress={moveDown}
-            disabled={position <= 0}
+            disabled={!isUp}
           >
             <Feather name="arrow-down" size={16} color="white" />
           </TouchableOpacity>
@@ -72,10 +71,10 @@ export default function BlindsControl() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#111827", // gray-900
+    backgroundColor: "#111827",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#1f2937", // gray-800
+    borderColor: "#1f2937",
     marginBottom: 16,
     overflow: "hidden",
   },
@@ -101,22 +100,20 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   button: {
-    backgroundColor: "#1f2937", // gray-800
+    backgroundColor: "#1f2937",
     borderWidth: 1,
-    borderColor: "#374151", // gray-700
+    borderColor: "#374151",
     borderRadius: 4,
     width: 40,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
+  buttonDisabled: { opacity: 0.5 },
   positionBadge: {
-    backgroundColor: "#9333ea", // purple-600
+    backgroundColor: "#9333ea",
     borderRadius: 16,
-    width: 32,
+    width: 60,
     height: 32,
     alignItems: "center",
     justifyContent: "center",

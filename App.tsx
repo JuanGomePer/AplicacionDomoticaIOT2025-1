@@ -1,12 +1,14 @@
-import { NavigationContainer } from "@react-navigation/native"
-import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { StatusBar } from "react-native"
-import { LogProvider } from "./context/LogContext"
-import LoginScreen from "./screens/LoginScreen"
-import ParentPage  from "./screens/ParentDashboard"
-import ChildPage  from "./screens/ChildDashboard"
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { StatusBar } from "react-native";
+import { LogProvider } from "./context/LogContext";
 
-const Stack = createNativeStackNavigator()
+import LoginScreen     from "./screens/LoginScreen";
+import RegisterScreen  from "./screens/RegisterScreen";
+import ParentPage      from "./screens/ParentDashboard";
+import ChildPage       from "./screens/ChildDashboard";
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
@@ -28,6 +30,11 @@ export default function App() {
           }}
         >
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{ title: "Registro" }}
+          />
           <Stack.Screen
             name="ParentDashboard"
             component={ParentPage}
