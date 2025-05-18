@@ -1,18 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { View, Text, StyleSheet, Switch } from "react-native"
 import { Feather } from "@expo/vector-icons"
+import { ref, onValue, set } from "firebase/database"
+import { db } from "../lib/firebase"
 import { useLogContext } from "../context/LogContext"
 
 export default function SensorControl() {
+  const sensorRef = ref(db, "home/sensor/motionActive")
   const [isActive, setIsActive] = useState(true)
   const { addLog } = useLogContext()
 
-  const toggleSensor = (value: boolean) => {
-    setIsActive(value)
-    // Add log entry when sensor is toggled
-    addLog("Sensor de Movimiento", value ? "Activado" : "Desactivado")
+  useEffect(() => {
+    const unsub = onValue(sensorRef, s => { if (s.exists()) setIsActive(!!s.val()) })
+    return () => unsub()
+  }, [])
+
+  const toggleSensor = (val: boolean) => {
+    set(sensorRef, val)
+    addLog("Sensor de Movimiento", val ? "Activado" : "Desactivado")
   }
 
   return (

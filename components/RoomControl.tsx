@@ -1,21 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { View, Text, StyleSheet, Switch } from "react-native"
 import { Feather } from "@expo/vector-icons"
+import { ref, onValue, set } from "firebase/database"
+import { db } from "../lib/firebase"
 import { useLogContext } from "../context/LogContext"
 
-interface RoomControlProps {
-  roomName: string
-}
+interface RoomControlProps { roomName: string }
 
 export default function RoomControl({ roomName }: RoomControlProps) {
+  const key = roomName           // usa la misma clave que en la BD
+    .toLowerCase()
+    .normalize("NFD").replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, "")         // ej. "Zona Exterior" → "zonaexterior"
+
+  const roomRef = ref(db, `home/rooms/${key}/light`)
   const [isOn, setIsOn] = useState(false)
   const { addLog } = useLogContext()
 
+  useEffect(() => {
+    const unsub = onValue(roomRef, s => { if (s.exists()) setIsOn(!!s.val()) })
+    return () => unsub()
+  }, [])
+
   const toggleLight = (value: boolean) => {
-    setIsOn(value)
-    // Add log entry when light is toggled
+    set(roomRef, value)
     addLog(`Luz ${roomName}`, value ? "Encendido" : "Apagado")
   }
 

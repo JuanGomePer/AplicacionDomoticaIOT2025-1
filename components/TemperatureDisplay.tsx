@@ -1,35 +1,37 @@
+/* components/TemperatureDisplay.tsx */
 "use client"
 
 import { useState, useEffect } from "react"
 import { View, Text, StyleSheet } from "react-native"
 import { Feather } from "@expo/vector-icons"
+import { ref, onValue } from "firebase/database"
+import { db } from "../lib/firebase"          // ← tu inicialización global
 
 export default function TemperatureDisplay() {
-  const [temperature, setTemperature] = useState(22.5)
-  const [humidity, setHumidity] = useState(45)
+  const [temperature, setTemperature] = useState<number | null>(null)
+  const [humidity, setHumidity]       = useState<number | null>(null)
 
-  // Simulate temperature changes
+  /* --- Suscribirse a tiempo real en Firebase --- */
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTemperature((prev) => {
-        const change = (Math.random() - 0.5) * 0.2
-        return +(prev + change).toFixed(1)
-      })
+    const tempRef = ref(db, "home/environment/temperature")
+    const humRef  = ref(db, "home/environment/humidity")
 
-      setHumidity((prev) => {
-        const change = Math.round((Math.random() - 0.5) * 2)
-        return Math.max(30, Math.min(70, prev + change))
-      })
-    }, 5000)
+    const offTemp = onValue(tempRef, snap => {
+      if (snap.exists()) setTemperature(snap.val())
+    })
+    const offHum  = onValue(humRef, snap => {
+      if (snap.exists()) setHumidity(snap.val())
+    })
 
-    return () => clearInterval(interval)
+    return () => { offTemp(); offHum() }      // Limpieza al desmontar
   }, [])
 
-  // Determine temperature color
-  const getTemperatureColor = (temp: number) => {
-    if (temp < 18) return "#3b82f6" // blue-500
-    if (temp > 25) return "#ef4444" // red-500
-    return "#10b981" // green-500
+  /* --- Color según rango --- */
+  const getColor = (t: number | null) => {
+    if (t === null) return "#9ca3af"          // gris mientras llega dato
+    if (t < 18)  return "#3b82f6"             // azul
+    if (t > 25)  return "#ef4444"             // rojo
+    return "#10b981"                          // verde
   }
 
   return (
@@ -37,25 +39,32 @@ export default function TemperatureDisplay() {
       <View style={styles.header}>
         <Text style={styles.title}>Temperatura Actual</Text>
       </View>
+
       <View style={styles.content}>
         <View style={styles.row}>
-          <View style={styles.temperatureContainer}>
+          <View style={styles.tempContainer}>
             <Feather name="thermometer" size={32} color="#9333ea" />
-            <Text style={[styles.temperatureText, { color: getTemperatureColor(temperature) }]}>{temperature}°C</Text>
+            <Text style={[styles.tempText, { color: getColor(temperature) }]}>
+              {temperature !== null ? `${temperature}°C` : "--.-°C"}
+            </Text>
           </View>
-          <Text style={styles.humidityText}>Humedad: {humidity}%</Text>
+
+          <Text style={styles.humText}>
+            Humedad: {humidity !== null ? `${humidity}%` : "--%"}
+          </Text>
         </View>
       </View>
     </View>
   )
 }
 
+/* ---------- Estilos ---------- */
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#111827", // gray-900
+    backgroundColor: "#111827",   // gray-900
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#1f2937", // gray-800
+    borderColor: "#1f2937",       // gray-800
     marginBottom: 16,
     overflow: "hidden",
   },
@@ -76,17 +85,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  temperatureContainer: {
+  tempContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  temperatureText: {
+  tempText: {
     fontSize: 24,
     fontWeight: "bold",
   },
-  humidityText: {
+  humText: {
     fontSize: 14,
-    color: "#9ca3af", // gray-400
+    color: "#9ca3af",             // gray-400
   },
 })

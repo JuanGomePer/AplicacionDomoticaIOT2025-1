@@ -1,12 +1,14 @@
 "use client"
 
-import { createContext, useState, useContext, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { ref, push, onChildAdded } from "firebase/database"
+import { db } from "../lib/firebase"
 
 export interface LogEntry {
-  id: number
-  timestamp: Date
-  action: string
+  id: string
+  timestamp: number
   device: string
+  action: string
 }
 
 interface LogContextType {
@@ -14,51 +16,36 @@ interface LogContextType {
   addLog: (device: string, action: string) => void
 }
 
+/* ➊ El generics permite undefined solo internamente */
 const LogContext = createContext<LogContextType | undefined>(undefined)
 
-export const useLogContext = () => {
+/* ➋ Anotamos el tipo de retorno explícitamente */
+export const useLogContext = (): LogContextType => {
   const context = useContext(LogContext)
-  if (context === undefined) {
-    throw new Error("useLogContext must be used within a LogProvider")
-  }
-  return context
+  if (!context) throw new Error("useLogContext must be used within a LogProvider")
+  return context          // ← ¡IMPORTANTE!
 }
 
-interface LogProviderProps {
-  children: ReactNode
-}
+export const LogProvider = ({ children }: { children: ReactNode }) => {
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const logsRef = ref(db, "home/logs")
 
-export const LogProvider = ({ children }: LogProviderProps) => {
-  const [logs, setLogs] = useState<LogEntry[]>([
-    {
-      id: 1,
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-      action: "Encendido",
-      device: "Luz Sala",
-    },
-    {
-      id: 2,
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-      action: "Apagado",
-      device: "Sensor de Movimiento",
-    },
-    {
-      id: 3,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      action: "Subida",
-      device: "Persiana",
-    },
-  ])
+  /* Escucha en tiempo real */
+  useEffect(() => {
+    const unsub = onChildAdded(logsRef, snap => {
+      const val = snap.val()
+      setLogs(prev => [{ id: snap.key!, ...val }, ...prev])
+    })
+    return () => unsub()
+  }, [])
 
   const addLog = (device: string, action: string) => {
-    const newLog = {
-      id: Date.now(),
-      timestamp: new Date(),
-      action,
-      device,
-    }
-    setLogs([newLog, ...logs])
+    push(logsRef, { timestamp: Date.now(), device, action })
   }
 
-  return <LogContext.Provider value={{ logs, addLog }}>{children}</LogContext.Provider>
+  return (
+    <LogContext.Provider value={{ logs, addLog }}>
+      {children}
+    </LogContext.Provider>
+  )
 }

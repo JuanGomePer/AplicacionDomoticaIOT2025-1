@@ -1,26 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { Feather } from "@expo/vector-icons"
+import { ref, onValue, set } from "firebase/database"
+import { db } from "../lib/firebase"
 import { useLogContext } from "../context/LogContext"
 
 export default function BlindsControl() {
-  const [position, setPosition] = useState(50) // 0 = fully down, 100 = fully up
+  const [position, setPosition] = useState(50)
   const { addLog } = useLogContext()
+  const blindsRef = ref(db, "home/blinds/position")
+
+  /* --- Mantente sincronizado con Firebase --- */
+  useEffect(() => {
+    const unsub = onValue(blindsRef, snap => {
+      if (snap.exists()) setPosition(snap.val())
+    })
+    return () => unsub()
+  }, [])
 
   const moveUp = () => {
     if (position < 100) {
-      const newPosition = Math.min(100, position + 25)
-      setPosition(newPosition)
+      const newPos = Math.min(100, position + 25)
+      set(blindsRef, newPos)
       addLog("Persiana", "Subida")
     }
   }
 
   const moveDown = () => {
     if (position > 0) {
-      const newPosition = Math.max(0, position - 25)
-      setPosition(newPosition)
+      const newPos = Math.max(0, position - 25)
+      set(blindsRef, newPos)
       addLog("Persiana", "Bajada")
     }
   }

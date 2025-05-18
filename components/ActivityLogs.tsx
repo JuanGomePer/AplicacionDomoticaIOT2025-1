@@ -1,3 +1,6 @@
+/* components/ActivityLogs.tsx */
+"use client"
+
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import { useLogContext, type LogEntry } from "../context/LogContext"
@@ -5,26 +8,28 @@ import { useLogContext, type LogEntry } from "../context/LogContext"
 export default function ActivityLogs() {
   const { logs, addLog } = useLogContext()
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("es-ES", {
+  /* ---------- Helpers ---------- */
+  const formatTime = (ts: number) =>
+    new Date(ts).toLocaleTimeString("es-ES", {
       hour: "2-digit",
       minute: "2-digit",
     })
-  }
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("es-ES", {
+  const formatDate = (ts: number) =>
+    new Date(ts).toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
     })
-  }
 
   const refreshLogs = () => {
-    // In a real app, this would fetch logs from an API
+    // Ejemplo de inserción ficticia
     const actions = ["Encendido", "Apagado"]
     const devices = ["Luz Cocina", "Luz Baño", "Sensor de Movimiento"]
 
-    addLog(devices[Math.floor(Math.random() * devices.length)], actions[Math.floor(Math.random() * actions.length)])
+    const device = devices[Math.floor(Math.random() * devices.length)]
+    const action = actions[Math.floor(Math.random() * actions.length)]
+
+    addLog(device, action)
   }
 
   const renderLogItem = ({ item }: { item: LogEntry }) => (
@@ -42,6 +47,7 @@ export default function ActivityLogs() {
 
   return (
     <View style={styles.card}>
+      {/* ---------- Encabezado ---------- */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Feather name="clock" size={20} color="white" />
@@ -51,11 +57,13 @@ export default function ActivityLogs() {
           <Feather name="refresh-cw" size={16} color="#9ca3af" />
         </TouchableOpacity>
       </View>
+
+      {/* ---------- Lista ---------- */}
       <View style={styles.content}>
         <FlatList
           data={logs}
           renderItem={renderLogItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.id}
           style={styles.logList}
           contentContainerStyle={styles.logListContent}
         />
@@ -64,12 +72,13 @@ export default function ActivityLogs() {
   )
 }
 
+/* ---------- Estilos ---------- */
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#111827", // gray-900
+    backgroundColor: "#111827",   // gray-900
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#1f2937", // gray-800
+    borderColor: "#1f2937",       // gray-800
     marginBottom: 16,
     overflow: "hidden",
   },
@@ -118,11 +127,11 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: "#6b7280", // gray-500
+    color: "#6b7280",             // gray-500
   },
   dateText: {
     fontSize: 12,
-    color: "#6b7280", // gray-500
+    color: "#6b7280",             // gray-500
   },
   logInfo: {
     flex: 1,
@@ -134,6 +143,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 12,
-    color: "#9ca3af", // gray-400
+    color: "#9ca3af",             // gray-400
   },
 })
