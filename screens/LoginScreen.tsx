@@ -29,9 +29,13 @@ export default function LoginScreen({ navigation }: any) {
       return;
     }
 
-    const role = snap.val().role as "parent" | "child";
+    const { role, photoURL } = snap.val() as {
+      role: "parent" | "child";
+      photoURL?: string;
+    };
     navigation.navigate(
-      role === "parent" ? "ParentDashboard" : "ChildDashboard"
+      role === "parent" ? "ParentDashboard" : "ChildDashboard",
+      { username, photoURL }
     );
   };
 
